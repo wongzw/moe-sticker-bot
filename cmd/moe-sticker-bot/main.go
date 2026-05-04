@@ -30,6 +30,7 @@ func parseCmdLine() core.ConfigTemplate {
 	var dbUser = flag.String("db_user", "", "mariadb(mysql) usernmae")
 	var dbPass = flag.String("db_pass", "", "mariadb(mysql) password")
 	var logLevel = flag.String("log_level", "debug", "Log level")
+	var allowedUsersFile = flag.String("allowed_users", "", "Path to allowed users file (txt or json)")
 	// var botApiAddr = flag.String("botapi_addr", "", "Local Bot API Server Address")
 	// var botApiDir = flag.String("botapi_dir", "", "Local Bot API Working directory")
 	// var webhookPublicAddr = flag.String("webhook_public_addr", "", "Webhook public address(WebhookEndpoint).")
@@ -72,6 +73,7 @@ func parseCmdLine() core.ConfigTemplate {
 
 	conf.AdminUid = *adminUid
 	conf.DataDir = *dataDir
+	conf.AllowedUsersFile = *allowedUsersFile
 
 	return conf
 	// core.Config = conf

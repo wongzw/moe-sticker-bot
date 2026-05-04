@@ -8,6 +8,11 @@ import (
 	"runtime/debug"
 	"time"
 
+	"encoding/json"
+	"io"
+	"strings"
+	"sync"
+
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 	"github.com/star-39/moe-sticker-bot/pkg/msbimport"
@@ -32,6 +37,13 @@ func Init(conf ConfigTemplate) {
 
 	// complies to telebot v3.1
 	b.Use(Recover())
+	if msbconf.AllowedUsersFile != "" {
+		err := loadAllowedUsers(msbconf.AllowedUsersFile)
+		if err != nil {
+			log.Fatalln("Failed to load allowed users file:", err)
+		}
+	}
+	b.Use(AllowListMiddleware())
 
 	b.Handle("/quit", cmdQuit)
 	b.Handle("/cancel", cmdQuit)
@@ -206,4 +218,78 @@ func initLogrus() {
 
 	fmt.Printf("Log level is set to: %s\n", log.GetLevel())
 	log.Debug("Warning: Log level below DEBUG might print sensitive information, including passwords.")
+}
+
+var allowedUsers struct {
+	sync.RWMutex
+	ids map[int64]bool
+}
+
+func loadAllowedUsers(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	var ids []int64
+
+	// detect format: if starts with [ it's JSON, otherwise treat as txt
+	trimmed := strings.TrimSpace(string(data))
+	if strings.HasPrefix(trimmed, "[") {
+		// JSON format: [123456789, 987654321]
+		err = json.Unmarshal(data, &ids)
+		if err != nil {
+			return err
+		}
+	} else {
+		// TXT format: one ID per line
+		for _, line := range strings.Split(trimmed, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue // skip empty lines and comments
+			}
+			var id int64
+			_, err := fmt.Sscanf(line, "%d", &id)
+			if err != nil {
+				log.Warnln("Skipping invalid line in allowed_users file:", line)
+				continue
+			}
+			ids = append(ids, id)
+		}
+	}
+
+	allowedUsers.Lock()
+	allowedUsers.ids = make(map[int64]bool)
+	for _, id := range ids {
+		allowedUsers.ids[id] = true
+	}
+	allowedUsers.Unlock()
+
+	fmt.Println("Loaded allowed users:", ids)
+	return nil
+}
+
+func AllowListMiddleware() tele.MiddlewareFunc {
+	return func(next tele.HandlerFunc) tele.HandlerFunc {
+		return func(c tele.Context) error {
+			// if no file configured, allow everyone
+			if msbconf.AllowedUsersFile == "" {
+				return next(c)
+			}
+			allowedUsers.RLock()
+			allowed := allowedUsers.ids[c.Sender().ID]
+			allowedUsers.RUnlock()
+			if !allowed {
+				fmt.Println("DEBUG blocked user:", c.Sender().ID)
+				return c.Send("⛔ You are not allowed to use this bot.")
+			}
+			return next(c)
+		}
+	}
 }

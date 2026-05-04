@@ -21,4 +21,5 @@ type ConfigTemplate struct {
 	// WebhookListenAddr string
 	// WebhookCert        string
 	// WebhookSecretToken string
+	AllowedUsersFile string
 }
