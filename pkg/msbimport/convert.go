@@ -2,6 +2,7 @@ package msbimport
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -100,7 +101,13 @@ func IMToWebpTGStatic(f string, isCustomEmoji bool) (string, error) {
 	}
 	args = append(args, "-filter", "Lanczos", "-define", "webp:lossless=true", f+"[0]", pathOut)
 
+	fmt.Println("DEBUG IMToWebpTGStatic input file:", f)
+	fmt.Println("DEBUG IMToWebpTGStatic command:", bin, args)
+
 	out, err := exec.Command(bin, args...).CombinedOutput()
+	fmt.Println("DEBUG IMToWebpTGStatic output:", string(out))
+	fmt.Println("DEBUG IMToWebpTGStatic error:", err)
+
 	if err != nil {
 		log.Warnln("IMToWebpTGRegular ERROR:", string(out))
 		return "", err
