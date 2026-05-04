@@ -297,8 +297,13 @@ func FFToWebmSafe(f string, isCustomEmoji bool) (string, error) {
 		"-c:v", "libvpx-vp9", "-cpu-used", "5", "-minrate", "50k", "-b:v", "200k", "-maxrate", "300k",
 		"-to", "00:00:02.800", "-r", "30", "-an", "-y", pathOut)
 
+	fmt.Println("DEBUG FFToWebmSafe input:", f)
+	fmt.Println("DEBUG FFToWebmSafe args:", args)
+
 	cmd := exec.Command(bin, args...)
-	err := cmd.Run()
+	out, err := cmd.CombinedOutput()
+	fmt.Println("DEBUG FFToWebmSafe output:", string(out))
+	fmt.Println("DEBUG FFToWebmSafe err:", err)
 	return pathOut, err
 }
 
