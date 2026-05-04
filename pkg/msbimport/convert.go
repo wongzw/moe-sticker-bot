@@ -252,6 +252,10 @@ func FFToWebmTGVideo(f string, isCustomEmoji bool) (string, error) {
 		args := append(baseargs, rcargs...)
 		args = append(args, []string{"-to", "00:00:03", "-an", "-y", pathOut}...)
 		out, err := exec.Command(bin, args...).CombinedOutput()
+		fmt.Println("DEBUG ffToWebm rc:", rc)
+		fmt.Println("DEBUG ffToWebm input:", f)
+		fmt.Println("DEBUG ffToWebm output:", string(out))
+		fmt.Println("DEBUG ffToWebm err:", err)
 		if err != nil {
 			log.Warnln("ffToWebm ERROR:", string(out))
 			//FFMPEG does not support animated webp.
